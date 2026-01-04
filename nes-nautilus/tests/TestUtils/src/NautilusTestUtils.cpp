@@ -243,7 +243,7 @@ void NautilusTestUtils::compileFillBufferFunction(
             std::move(compiledFunction));
 }
 
-std::string NautilusTestUtils::compareRecords(
+std::optional<std::string> NautilusTestUtils::compareRecords(
     const Record& recordLeft, const Record& recordRight, const std::vector<Record::RecordFieldIdentifier>& projection)
 {
     bool printErrorMessage = false;
@@ -264,7 +264,9 @@ std::string NautilusTestUtils::compareRecords(
         }
         ss << valueRight << ") ";
     }
-    return printErrorMessage ? ss.str().c_str().value : "";
+    const auto strPtr = nautilus::details::RawValueResolver<const char*>::getRawValue(ss.str().c_str());
+    const auto strSize = nautilus::details::RawValueResolver<uint64_t>::getRawValue(ss.str().size());
+    return printErrorMessage ? std::string{strPtr, strSize} : std::optional<std::string>{};
 }
 
 }
