@@ -175,6 +175,7 @@ public:
         {
             if (not SpecificConfiguration::parameterMap.contains(key))
             {
+                std::cout << "  " << key << "\n";
                 throw InvalidConfigParameter(fmt::format("Unknown configuration parameter: {}.", key));
             }
         }

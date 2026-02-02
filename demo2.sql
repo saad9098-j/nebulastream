@@ -1,18 +1,18 @@
-CREATE LOGICAL SOURCE single5(id UINT64, status VARSIZED, value UINT64,type VARSIZED);
+CREATE LOGICAL SOURCE input(id UINT64, value UINT64, timestamp UINT64);
+CREATE PHYSICAL SOURCE FOR input TYPE File SET('./nes-systests/testdata/small/stream8.csv' AS `SOURCE`.FILE_PATH, 'CSV' AS PARSER.`TYPE`, '\n' AS PARSER.TUPLE_DELIMITER, ',' AS PARSER.FIELD_DELIMITER);
 
-CREATE PHYSICAL SOURCE FOR single5 TYPE LinuxProcess SET(
-  './nes-systests/sources/bashjson.sh' AS `SOURCE`.command,
-  'JSON' AS PARSER.`TYPE`,
-  '\n' AS PARSER.TUPLE_DELIMITER,
-  ','  AS PARSER.FIELD_DELIMITER
+CREATE SINK out_lp(input.id UINT64, input.value UINT64, input.timestamp UINT64) TYPE LinuxProcess SET(
+  'python3 -u nes-systests/sinks/linuxprocessconsumer.py' AS `SINK`.command,
+  'CSV' AS `SINK`.INPUT_FORMAT
 );
 
-CREATE SINK result9(
-  single5.id UINT64,
-  single5.status VARSIZED,
-  single5.value UINT64,
-  single5.type VARSIZED
-) TYPE File SET('./demo-output2.csv' AS `SINK`.FILE_PATH, 'CSV' AS `SINK`.INPUT_FORMAT);
-SELECT id, status, value, type FROM single5 INTO result9;
+SELECT id, value, timestamp
+FROM input
+INTO out_lp;
 
---python3 ./nes-systests/sources/LinuxProcess_Source_JSON.py
+CREATE LOGICAL SOURCE out(id UINT64, value UINT64, timestamp UINT64);
+CREATE PHYSICAL SOURCE FOR out TYPE File SET('./nes-systests/testdata/small/out-linuxprocess.csv' AS `SOURCE`.FILE_PATH, 'CSV' AS PARSER.`TYPE`, '\n' AS PARSER.TUPLE_DELIMITER, ',' AS PARSER.FIELD_DELIMITER);
+
+CREATE SINK check(out.id UINT64, out.value UINT64, out.timestamp UINT64) TYPE File SET('./demo-output.csv' AS `SINK`.FILE_PATH, 'CSV' AS `SINK`.INPUT_FORMAT);
+
+SELECT * FROM out INTO check;
